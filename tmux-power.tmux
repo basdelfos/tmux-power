@@ -3,6 +3,13 @@
 #   Author: Wenxuan
 #    Email: wenxuangm@gmail.com
 #  Created: 2018-04-05 17:37
+#
+#  Changes: Added tun0 ip-address when connected
+#           Moved windows (tabs) to align left
+#           Added prefix indicator
+#           Changed time to HH:MM
+#           Lower refresh frequency
+#
 #===============================================================================
 
 # $1: option
@@ -27,12 +34,14 @@ session_icon="$(tmux_get '@tmux_power_session_icon' '')"
 user_icon="$(tmux_get '@tmux_power_user_icon' '')"
 time_icon="$(tmux_get '@tmux_power_time_icon' '')"
 date_icon="$(tmux_get '@tmux_power_date_icon' '')"
+vpn_icon="$(tmux_get '@tmux_power_vpn_icon' '嬨')"
 show_upload_speed="$(tmux_get @tmux_power_show_upload_speed false)"
 show_download_speed="$(tmux_get @tmux_power_show_download_speed false)"
 show_web_reachable="$(tmux_get @tmux_power_show_web_reachable false)"
 prefix_highlight_pos=$(tmux_get @tmux_power_prefix_highlight_pos)
-time_format=$(tmux_get @tmux_power_time_format '%T')
+time_format=$(tmux_get @tmux_power_time_format '%H:%M')
 date_format=$(tmux_get @tmux_power_date_format '%F')
+
 # short for Theme-Colour
 TC=$(tmux_get '@tmux_power_theme' 'gold')
 case $TC in
@@ -82,7 +91,7 @@ FG="$G10"
 BG="$G04"
 
 # Status options
-tmux_set status-interval 1
+tmux_set status-interval 10
 tmux_set status on
 
 # Basic status bar colors
@@ -104,7 +113,7 @@ tmux_set status-left-bg "$G04"
 tmux_set status-left-fg "G12"
 tmux_set status-left-length 150
 user=$(whoami)
-LS="#[fg=$G04,bg=$TC] $user_icon $user@#h #[fg=$TC,bg=$G06,nobold]$right_arrow_icon#[fg=$TC,bg=$G06] $session_icon #S "
+LS="#{?client_prefix,#[fg=yellow],#[fg=$G04]}#[bg=$TC] $user_icon #[fg=$G04,bg=$TC] $user@#h #[fg=$TC,bg=$G06,nobold]$right_arrow_icon#[fg=$TC,bg=$G06] $session_icon #S "
 if "$show_upload_speed"; then
     LS="$LS#[fg=$G06,bg=$G05]$right_arrow_icon#[fg=$TC,bg=$G05] $upload_speed_icon #{upload_speed} #[fg=$G05,bg=$BG]$right_arrow_icon"
 else
@@ -119,7 +128,13 @@ tmux_set status-left "$LS"
 tmux_set status-right-bg "$G04"
 tmux_set status-right-fg "G12"
 tmux_set status-right-length 150
-RS="#[fg=$TC,bg=$G06] $time_icon $time_format #[fg=$TC,bg=$G06]$left_arrow_icon#[fg=$G04,bg=$TC] $date_icon $date_format "
+ip=$(ip a s tun0 2>/dev/null | grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}" | head -1)
+if [[ "$ip" = "" ]]; then
+    vpn="$vpn_icon ---"
+else
+    vpn="$vpn_icon $ip"
+fi;
+RS="$vpn #[fg=$G06]$left_arrow_icon#[fg=$TC,bg=$G06] $time_icon $time_format #[fg=$TC,bg=$G06]$left_arrow_icon#[fg=$G04,bg=$TC] $date_icon $date_format "
 if "$show_download_speed"; then
     RS="#[fg=$G05,bg=$BG]$left_arrow_icon#[fg=$TC,bg=$G05] $download_speed_icon #{download_speed} #[fg=$G06,bg=$G05]$left_arrow_icon$RS"
 fi
@@ -139,10 +154,10 @@ tmux_set window-status-current-format "#[fg=$BG,bg=$G06]$right_arrow_icon#[fg=$T
 tmux_set window-status-separator ""
 
 # Window status alignment
-tmux_set status-justify centre
+tmux_set status-justify left
 
 # Current window status
-tmux_set window-status-current-statys "fg=$TC,bg=$BG"
+tmux_set window-status-current-status "fg=$TC,bg=$BG"
 
 # Pane border
 tmux_set pane-border-style "fg=$G07,bg=default"
